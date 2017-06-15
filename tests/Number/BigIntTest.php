@@ -153,6 +153,9 @@ class BigIntTest extends \PHPUnit_Framework_TestCase
             [1],
             [-1],
             [0],
+            [5],
+            [94893],
+            [-893894],
             [\PHP_INT_MAX],
             [\PHP_INT_MIN],
         ];
@@ -217,7 +220,7 @@ class BigIntTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @testCase     Test Constructor for a Type Exception
+     * @testCase Test Constructor for a Type Exception
      */
     public function testConstructorFloatExceptions()
     {
@@ -232,37 +235,48 @@ class BigIntTest extends \PHPUnit_Framework_TestCase
      * @param        array  $int2
      * @param        array  $expected
      */
-    public function testAddInt(int $int1, int $int2, int $e)
+    public function testAddInt(int $int1, int $int2, int $expected)
     {
-        $A = new BigInt($int1);
-        $B = $int2;
-        $sum = $A->add($B);
-        $expected = new BigInt($e);
-        $this->assertTrue($sum->equals($expected));
+        $A                = new BigInt($int1);
+        $B                = $int2;
+        $sum              = $A->add($B);
+        $expected_big_int = new BigInt($expected);
+        $this->assertEquals($expected, $sum->toInt());
+        $this->assertTrue($sum->equals($expected_big_int));
     }
 
     public function dataProviderForAddInt()
     {
         return [
-            [ // 1 + 1 = 2
+            '1 + 1 = 2' => [
                 1,
                 1,
                 2,
             ],
-            [ // 123 + 234 = 357
+            '123 + 234 = 357' => [
                 123,
                 234,
                 357,
             ],
-            [ // 1 + -1 = 0
+            '1 + -1 = 0' => [
                 1,
                 -1,
                 0,
             ],
-            [ // -123 + -234 = -357
+            '-123 + -234 = -357' => [
                 -123,
                 -234,
                 -357,
+            ],
+            '8473 + 9958343 = 9966816' => [
+                8473,
+                9958343,
+                9966816,
+            ],
+            '8473 + -9958343 = -9949870' => [
+                8473,
+                -9958343,
+                -9949870,
             ],
         ];
     }
@@ -276,22 +290,45 @@ class BigIntTest extends \PHPUnit_Framework_TestCase
      */
     public function testAddBigInt($int1, $int2, $e)
     {
-        $A = new BigInt($int1);
-        $B = new BigInt($int2);
-        $sum = $A->add($B);
+        $A        = new BigInt($int1);
+        $B        = new BigInt($int2);
+        $sum      = $A->add($B);
         $expected = new BigInt($e);
         $this->assertEquals($expected->dechex(), $sum->dechex());
+        $this->assertEquals($expected->decbin(), $sum->decbin());
     }
 
     public function dataProviderForAddBigInt()
     {
-        return [
+        foreach ($this->dataProviderForAddInt() as $data) {
+            yield $data;
+        }
+
+        foreach ([
             [
                 [1, 1],
                 [1, 1],
                 [2, 2],
             ],
-        ];
+            [
+                [2, 1],
+                [2, 1],
+                [4, 2],
+            ],
+            [
+                [1, 1],
+                [0, -1],
+                [1, 0],
+            ],
+            // Should this work?
+            //[
+            //    [1, 1],
+            //    [-1, 0],
+            //    [0, 1],
+            //]
+        ] as $data) {
+            yield $data;
+        }
     }
 
     /**
@@ -313,22 +350,22 @@ class BigIntTest extends \PHPUnit_Framework_TestCase
     public function dataProviderForSubtractInt()
     {
         return [
-            [ // 1 - -1 = 2
+            '1 - -1 = 2' => [
                 1,
                 -1,
                 2,
             ],
-            [ // 123 - 234 = -111
+            '123 - 234 = -111' => [
                 123,
                 234,
                 -111,
             ],
-            [ // 1 - 1 = 0
+            '1 - 1 = 0' => [
                 1,
                 1,
                 0,
             ],
-            [ // -123 - 234 = -357
+            '-123 - 234 = -357' => [
                 -123,
                 234,
                 -357,
@@ -551,6 +588,7 @@ class BigIntTest extends \PHPUnit_Framework_TestCase
             [-1, 1],
             [0, 0],
             [1234567890, -1234567890],
+            [-1234567890, 1234567890],
             [[-1, \PHP_INT_MAX], [1, \PHP_INT_MIN]],
         ];
     }
@@ -570,23 +608,29 @@ class BigIntTest extends \PHPUnit_Framework_TestCase
      * @dataProvider dataProviderForToString
      * @param        array  $bigint
      * @param        array  $e
-    */
-
+     */
     public function testToString($bigint, string $e)
     {
         $A = new BigInt($bigint);
-        $this->assertEquals($e, $A->__toString());
+        $this->assertSame($e, $A->__toString());
+        $this->assertSame($e, strval($A));
+        $this->assertSame($e, "$A");
+        $this->assertSame($e, (string) $A);
     }
 
     public function dataProviderForToString()
     {
         return [
-            [1, "1"],
-            [-1, "-1"],
-            [1234567, "1234567"],
-            [1234567890, "1234567890"],
-            //[[-1, \PHP_INT_MAX], "160141188460469231687303715884105727"], // INT_MAX
-           // [[0, \PHP_INT_MIN], "-160141188460469231687303715884105728"], // INT_MIN
+            [0, '0'],
+            [1, '1'],
+            [-1, '-1'],
+            [1234567, '1234567'],
+            [1234567890, '1234567890'],
+            //[[-1, \PHP_INT_MAX], '160141188460469231687303715884105727'], // INT_MAX
+           // [[0, \PHP_INT_MIN], '-160141188460469231687303715884105728'], // INT_MIN
+            [999999999999999, '999999999999999'],
+            //[\PHP_INT_MAX, strval(\PHP_INT_MAX)], // Expect this to work, but it crashes
+            //[\PHP_INT_MAX - 999999, strval(\PHP_INT_MAX - 999999)], // Expect this to work, but it crashes
         ];
     }
 }
