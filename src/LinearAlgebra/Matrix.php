@@ -3376,41 +3376,42 @@ class Matrix implements \ArrayAccess, \JsonSerializable
      * Q is an orthogonal matrix
      * R is an upper triangular matrix
      *
+     * If the source matrix is square or wider than it is tall, the final
+     * householder matrix will be the identity matrix with a -1 in the bottom
+     * corner. The effect of this final transformation would only change signs
+     * on existing matrices. Both R and Q will already be in appropriate forms
+     * in the next to the last step. We can skip the last transformation without
+     * affecting the validity of the results. Results indicate other software
+     * behaves similarly.
+     * This is because on a 1x1 matrix uuᵀ = uᵀu, so I - [[2]] = [[-1]]
+     *
      * @return Matrix[] Q and R
      *
      * @throws Exception\MathException
      */
     public function qrDecomposition(): array
     {
-        $n = $this->n;  // columns
-        $m = $this->m;  // rows
-        $HA = $this;
+        $m  = $this->m;
+        $n  = $this->n;
+        $HA = clone($this);
 
-        // If the source matrix is square or wider than it is tall, the final
-        // householder matrix will be the identity matrix with a -1 in the bottom
-        // corner. The effect of this final transformation would only change signs
-        // on existing matricies. Both R and Q will already be in approprite forms
-        // in the next to the last step. We can skip the last transformation without
-        // affecting the validity of the results. Results indicate other software
-        // behaves similarly.
-        //
-        // This is because on a 1x1 matrix uuᵀ = uᵀu, so I - [[2]] = [[-1]]
-        $numReflections = min($m - 1, $n);
         $FullI = MatrixFactory::identity($m);
-        $Q = $FullI;
+        $Q     = $FullI;
+
+        $numReflections = min($m - 1, $n);
         for ($i = 0; $i < $numReflections; $i++) {
-            // Remove the leftmost $i columns and upper $i rows
-            $A = $HA->submatrix($i, $i, $m - 1, $n - 1);
-            
-            //Create the householder matrix
-            $innerH = $A->householderMatrix();
+            // Remove the leftmost $i columns and upper $i rows to create the Householder matrix
+            $A       = $HA->submatrix($i, $i, $m - 1, $n - 1);
+            $innerHᵢ = $A->householderMatrix();
             
             // Embed the smaller matrix within a full rank Identity matrix
-            $H = $FullI->insert($innerH, $i, $i);
-            $Q = $Q->multiply($H);
-            $HA = $H->multiply($HA);
+            $Hᵢ = $FullI->insert($innerHᵢ, $i, $i);
+            $Q  = $Q->multiply($Hᵢ);
+            $HA = $Hᵢ->multiply($HA);
         }
+
         $R = $HA;
+
         return [
             'Q' => $Q->submatrix(0, 0, $m - 1, min($m, $n) - 1),
             'R' => $R->submatrix(0, 0, min($m, $n) - 1, $n - 1),
@@ -3423,18 +3424,19 @@ class Matrix implements \ArrayAccess, \JsonSerializable
      * u = x ± αe   where α = ‖x‖ and sgn(α) = sgn(x)
      *
      *              uuᵀ
-     * Q = I - 2 * -----
+     * H = I - 2 * -----
      *              uᵀu
      *
      * @return Matrix
      *
+     * @throws Exception\MathException
      */
     private function householderMatrix(): Matrix
     {
         $m = $this->m;
         $I = MatrixFactory::identity($m);
         
-        //  x is the leftmost column of A
+        // x is the leftmost column of A
         $x = $this->submatrix(0, 0, $m - 1, 0);
         
         // α is the square root of the sum of squares of x with the correct sign
@@ -3446,11 +3448,11 @@ class Matrix implements \ArrayAccess, \JsonSerializable
         // u = x ± αe
         $u = $e->scalarMultiply($α)->add($x);
 
-        $uᵀ = $u->transpose();
+        $uᵀ  = $u->transpose();
         $uᵀu = $uᵀ->multiply($u)->get(0, 0);
         $uuᵀ = $u->multiply($uᵀ);
-        
-        // We scale $uuᵀ and subtract it from the identity matrix
+
+        // H = I - 2 * (uuᵀ / uᵀu)
         return $I->subtract($uuᵀ->scalarMultiply(2 / $uᵀu));
     }
 
