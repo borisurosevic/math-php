@@ -2990,19 +2990,10 @@ class Matrix implements \ArrayAccess, \JsonSerializable
             }
         }
 
-        $R = $R->getMatrix();
-
-        // Floating point adjustment for zero values
-        for ($i = 0; $i < $m; $i++) {
-            for ($j = 0; $j < $n; $j++) {
-                if (Support::isZero($R[$i][$j])) {
-                    $R[$i][$j] = 0;
-                }
-            }
-        }
-
+        $R->floatingPointZeroAdjustment();
         $this->ref_swaps = $swaps;
-        return $R;
+
+        return $R->getMatrix();
     }
 
     /**
@@ -3072,18 +3063,9 @@ class Matrix implements \ArrayAccess, \JsonSerializable
             }
         }
 
-        $R = $R->getMatrix();
+        $R->floatingPointZeroAdjustment();
+        $this->rref = $R;
 
-        // Floating point adjustment for zero values
-        for ($i = 0; $i < $m; $i++) {
-            for ($j = 0; $j < $n; $j++) {
-                if (Support::isZero($R[$i][$j])) {
-                    $R[$i][$j] = 0;
-                }
-            }
-        }
-
-        $this->rref = MatrixFactory::create($R);
         return $this->rref;
     }
 
@@ -3411,6 +3393,7 @@ class Matrix implements \ArrayAccess, \JsonSerializable
         }
 
         $R = $HA;
+        $R->floatingPointZeroAdjustment();
 
         return [
             'Q' => $Q->submatrix(0, 0, $m - 1, min($m, $n) - 1),

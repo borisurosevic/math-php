@@ -2074,12 +2074,12 @@ class MatrixDecompositionsTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @testCase     qrDecomposition returns the expected array of Q and R factorized matrices
-     * @dataProvider dataProviderForQrDecomposition
+     * @dataProvider dataProviderForQrDecompositionSquareMatrix
      * @param        array $A
      * @param        array $expected
      * @throws       \Exception
      */
-    public function testQrDecomposition1(array $A, array $expected)
+    public function testQrDecompositionSquareMatrix(array $A, array $expected)
     {
         // Given
         $A = MatrixFactory::create($A);
@@ -2094,21 +2094,160 @@ class MatrixDecompositionsTest extends \PHPUnit\Framework\TestCase
         // Then A = QR
         $this->assertEquals($A->getMatrix(), $qrQ->multiply($qrR)->getMatrix(), '', 0.00001);
 
-        // And Q is orthogonal and R is upper triangular
-        //$this->assertTrue($qrR->isUpperTriangular());
-        // Add test for Q orthongality
-
         // And Q and R are expected solution to QR decomposition
-        $this->assertEquals($R->getMatrix(), $qrR->getMatrix(), '', 0.00001);
         $this->assertEquals($Q->getMatrix(), $qrQ->getMatrix(), '', 0.00001);
+        $this->assertEquals($R->getMatrix(), $qrR->getMatrix(), '', 0.00001);
+
+        // And Q is orthogonal and R is upper triangular
+        $this->assertTrue($qrR->isUpperTriangular());
+        // Add test for Q orthoganality
     }
 
     /**
+     * Data generated with R qr(A)
      * @return array
      */
-    public function dataProviderForQrDecomposition(): array
+    public function dataProviderForQrDecompositionSquareMatrix(): array
     {
         return [
+            [
+                [
+                    [0]
+                ],
+                [
+                    'Q' => [
+                        [1],
+                    ],
+                    'R' => [
+                        [0],
+                    ],
+                ],
+            ],
+            [
+                [
+                    [1]
+                ],
+                [
+                    'Q' => [
+                        [1],
+                    ],
+                    'R' => [
+                        [1],
+                    ],
+                ],
+            ],
+            [
+                [
+                    [0, 0],
+                    [0, 0],
+                ],
+                [
+                    'Q' => [
+                        [1, 0],
+                        [0, 1],
+                    ],
+                    'R' => [
+                        [0, 0],
+                        [0, 0],
+                    ],
+                ],
+            ],
+            [
+                [
+                    [1, 0],
+                    [0, 0],
+                ],
+                [
+                    'Q' => [
+                        [-1, 0],
+                        [0, 1],
+                    ],
+                    'R' => [
+                        [-1, 0],
+                        [0, 0],
+                    ],
+                ],
+            ],
+            [
+                [
+                    [0, 1],
+                    [0, 0],
+                ],
+                [
+                    'Q' => [
+                        [-1, 0],
+                        [0, 1],
+                    ],
+                    'R' => [
+                        [-1, 0],
+                        [0, 0],
+                    ],
+                ],
+            ],
+            [
+                [
+                    [0, 0],
+                    [1, 0],
+                ],
+                [
+                    'Q' => [
+                        [0, -1],
+                        [-1, 0],
+                    ],
+                    'R' => [
+                        [-1, 0],
+                        [0, 0],
+                    ],
+                ],
+            ],
+            [
+                [
+                    [0, 0],
+                    [0, 1],
+                ],
+                [
+                    'Q' => [
+                        [0, -1],
+                        [-1, 0],
+                    ],
+                    'R' => [
+                        [-1, 0],
+                        [0, 0],
+                    ],
+                ],
+            ],
+            [
+                [
+                    [1, 1],
+                    [1, 1],
+                ],
+                [
+                    'Q' => [
+                        [-0.7071068, -0.7071068],
+                        [-0.7071068, 0.7071068],
+                    ],
+                    'R' => [
+                        [-1.414214, -1.414214],
+                        [0, 2.220446e-16],
+                    ],
+                ],
+            ],
+            [
+                [
+                    [3, 5],
+                    [4, 1],
+                ],
+                [
+                    'Q' => [
+                        [-0.6, -0.8],
+                        [-0.8, 0.6],
+                    ],
+                    'R' => [
+                        [-5, -3.8],
+                        [0, -3.4],
+                    ],
+                ],
+            ],
             [
                 [
                     [2, -2, 18],
@@ -2147,6 +2286,43 @@ class MatrixDecompositionsTest extends \PHPUnit\Framework\TestCase
                     ],
                 ],
             ],
+        ];
+    }
+
+    /**
+     * @testCase     qrDecomposition returns the expected array of Q and R factorized matrices
+     * @dataProvider dataProviderForQrDecompositionNonSquareMatrix
+     * @param        array $A
+     * @param        array $expected
+     * @throws       \Exception
+     */
+    public function testQrDecompositionNonSquareMatrix(array $A, array $expected)
+    {
+        // Given
+        $A = MatrixFactory::create($A);
+        $Q = MatrixFactory::create($expected['Q']);
+        $R = MatrixFactory::create($expected['R']);
+
+        // When
+        $qr  = $A->qrDecomposition();
+        $qrQ = $qr['Q'];
+        $qrR = $qr['R'];
+
+        // Then A = QR
+        $this->assertEquals($A->getMatrix(), $qrQ->multiply($qrR)->getMatrix(), '', 0.00001);
+
+        // And Q and R are expected solution to QR decomposition
+        $this->assertEquals($R->getMatrix(), $qrR->getMatrix(), '', 0.00001);
+        $this->assertEquals($Q->getMatrix(), $qrQ->getMatrix(), '', 0.00001);
+    }
+
+    /**
+     * Data generated with R qr(A)
+     * @return array
+     */
+    public function dataProviderForQrDecompositionNonSquareMatrix(): array
+    {
+        return [
             [
                 [
                     [2, -2, -3],

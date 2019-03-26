@@ -91,13 +91,14 @@ class Support
      * Is the number equivalent to zero?
      * Due to floating-point arithmetic, zero might be represented as an infinitesimal quantity.
      *
-     * @param  float $x
+     * @param float $x number being compared against 'zero'
+     * @param float $ε tolerance for what is considered zero
      *
      * @return boolean true if equivalent to zero; false otherwise
      */
-    public static function isZero(float $x): bool
+    public static function isZero(float $x, $ε = self::ε): bool
     {
-        return ($x == 0 || abs($x) <= self::ε);
+        return ($x == 0 || abs($x) <= $ε);
     }
 
     /**
